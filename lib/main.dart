@@ -231,7 +231,7 @@ class _CameraScanContentState extends State<CameraScanContent> {
           children: [
             Icon(Icons.camera_alt, color: Colors.white),
             SizedBox(width: 12),
-            Text('Đang kích hoạt Camera & Phân tích AI...'),
+            Text('Đang kích hoạt Camera'),
           ],
         ),
         behavior: SnackBarBehavior.floating,
