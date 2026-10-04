@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "686654122851",
+    "project_id": "gymerapp-3e6cf",
+    "storage_bucket": "gymerapp-3e6cf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686654122851:android:47d59d3ac351c30ab24156",
+        "android_client_info": {
+          "package_name": "com.example.gymer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCVJkgwU4vs5jWqKUHrNYZvD0w2tblypY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

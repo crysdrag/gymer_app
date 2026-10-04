@@ -1,6 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-void main() {
+// Handler cho tin nhắn background/terminated
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Đảm bảo Firebase được khởi tạo trước khi dùng bất kỳ dịch vụ nào của nó
+  await Firebase.initializeApp();
+  debugPrint("Handling a background message: ${message.messageId}");
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Firebase.initializeApp();
+    
+    // Thiết lập background handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    // Xin quyền thông báo (đặc biệt quan trọng từ Android 13+)
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    
+    debugPrint('User granted permission: ${settings.authorizationStatus}');
+    
+    // Lấy Token FCM và log ra console
+    String? token = await messaging.getToken();
+    debugPrint("FCM Registration Token: $token");
+    
+  } catch (e) {
+    debugPrint("Error initializing Firebase: $e");
+  }
+
   runApp(const NutriGymApp());
 }
 
