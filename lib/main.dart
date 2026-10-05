@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/notification_service.dart';
+import 'screens/timer_screen.dart';
 
 // Handler cho tin nhắn background/terminated
 @pragma('vm:entry-point')
@@ -111,6 +112,23 @@ class _MainScreenState extends State<MainScreen> {
                 },
                 icon: const Icon(Icons.notifications_active),
                 label: const Text('Test Notification', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF111827),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TimerScreen()),
+                  );
+                },
+                icon: const Icon(Icons.timer),
+                label: const Text('Timer', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
