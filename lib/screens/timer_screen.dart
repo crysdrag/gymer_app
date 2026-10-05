@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/notification_service.dart';
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -21,6 +22,15 @@ class _TimerScreenState extends State<TimerScreen> {
   bool _isPaused = false;
   DateTime? _endTime;
 
+  final NotificationService _notificationService = NotificationService();
+  final int _timerNotificationId = 1001;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationService.requestExactAlarmPermission();
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -35,13 +45,23 @@ class _TimerScreenState extends State<TimerScreen> {
     
     if (mins == 0 && secs == 0) return;
 
+    final duration = Duration(minutes: mins, seconds: secs);
+    final endTime = DateTime.now().add(duration);
+
     setState(() {
-      _initialTime = Duration(minutes: mins, seconds: secs);
+      _initialTime = duration;
       _remainingTime = _initialTime;
       _isRunning = true;
       _isPaused = false;
-      _endTime = DateTime.now().add(_remainingTime);
+      _endTime = endTime;
     });
+
+    _notificationService.scheduleTimerNotification(
+      id: _timerNotificationId,
+      title: "Hết giờ!",
+      body: "Thời gian tập luyện đã kết thúc.",
+      scheduledDate: endTime,
+    );
 
     _tick();
   }
@@ -78,13 +98,23 @@ class _TimerScreenState extends State<TimerScreen> {
       _isPaused = true;
       _timer?.cancel();
     });
+    _notificationService.cancelNotification(_timerNotificationId);
   }
 
   void _resumeTimer() {
+    final newEndTime = DateTime.now().add(_remainingTime);
     setState(() {
       _isPaused = false;
-      _endTime = DateTime.now().add(_remainingTime);
+      _endTime = newEndTime;
     });
+    
+    _notificationService.scheduleTimerNotification(
+      id: _timerNotificationId,
+      title: "Hết giờ!",
+      body: "Thời gian tập luyện đã kết thúc.",
+      scheduledDate: newEndTime,
+    );
+    
     _tick();
   }
 
@@ -97,6 +127,7 @@ class _TimerScreenState extends State<TimerScreen> {
       _minController.text = '0';
       _secController.text = '0';
     });
+    _notificationService.cancelNotification(_timerNotificationId);
   }
 
   String _formatDuration(Duration duration) {

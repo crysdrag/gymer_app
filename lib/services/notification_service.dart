@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -16,6 +18,8 @@ class NotificationService {
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
+
+    tz.initializeTimeZones();
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -58,5 +62,49 @@ class NotificationService {
       platformDetails,
       payload: payload,
     );
+  }
+
+  Future<void> scheduleTimerNotification({
+    int id = 1,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'gymer_timer_channel_id',
+      'Timer Notifications',
+      channelDescription: 'Notifications for workout timers',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _notificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.now(tz.local).add(scheduledDate.difference(DateTime.now())),
+      platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await _notificationsPlugin.cancel(id);
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.requestExactAlarmsPermission();
+    }
   }
 }
