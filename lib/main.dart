@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/notification_service.dart';
 
 // Handler cho tin nhắn background/terminated
 @pragma('vm:entry-point')
@@ -13,6 +14,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Khởi tạo Notification Service
+  final notificationService = NotificationService();
+  await notificationService.init();
+
   try {
     await Firebase.initializeApp();
     
@@ -75,6 +80,41 @@ class _MainScreenState extends State<MainScreen> {
   // Hàm chuyển đổi nội dung body dựa trên tab
   Widget _buildBody() {
     switch (_currentTab) {
+      case 0:
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.home, size: 64, color: Color(0xFF111827)),
+              const SizedBox(height: 24),
+              const Text(
+                'MÀN HÌNH CHÍNH',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF111827),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  NotificationService().showNotification(
+                    title: "Gymer",
+                    body: "Đây là thông báo kiểm tra Local Notification.",
+                  );
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('Test Notification', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
       case 1:
         return const CameraScanContent();
       default:
