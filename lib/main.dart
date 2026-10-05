@@ -38,6 +38,27 @@ void main() async {
     // Lấy Token FCM và log ra console
     String? token = await messaging.getToken();
     debugPrint("FCM Registration Token: $token");
+
+    // Lắng nghe tin nhắn khi app đang ở foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint("Foreground message received: ${message.messageId}");
+      if (message.data.isNotEmpty) {
+        debugPrint("Message data: ${message.data}");
+      }
+
+      RemoteNotification? notification = message.notification;
+      if (notification != null) {
+        debugPrint("Notification Title: ${notification.title}");
+        debugPrint("Notification Body: ${notification.body}");
+
+        notificationService.showNotification(
+          id: notification.hashCode,
+          title: notification.title,
+          body: notification.body,
+          payload: message.data.toString(),
+        );
+      }
+    });
     
   } catch (e) {
     debugPrint("Error initializing Firebase: $e");
