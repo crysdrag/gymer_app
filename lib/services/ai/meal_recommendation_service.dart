@@ -1,6 +1,6 @@
 import 'dart:io';
-import '../../models/food_recognition_result.dart';
 import '../../models/recipe.dart';
+import '../../models/meal_recommendation_result.dart';
 import 'food_recognition_service.dart';
 import 'ingredient_normalizer.dart';
 import 'recipe_service.dart';
@@ -14,8 +14,8 @@ class MealRecommendationService {
     required this.recipeService,
   });
 
-  Future<List<Recipe>> recommendMeals(File image) async {
-    // 1. Nhận diện nguyên liệu từ ảnh
+  Future<MealRecommendationResult> recommendMeals(File image) async {
+    // 1. Nhận diện nguyên liệu từ ảnh (Gọi 1 lần duy nhất)
     final recognitionResults = await foodRecognitionService.recognizeIngredients(image);
 
     // 2. Lọc confidence >= 0.8
@@ -24,13 +24,16 @@ class MealRecommendationService {
         .toList();
 
     if (filteredResults.isEmpty) {
-      return [];
+      return MealRecommendationResult(
+        recognizedIngredients: [],
+        recipes: [],
+      );
     }
 
-    // 3. Chuẩn hóa tên nguyên liệu
+    // 3. Chuẩn hóa tên nguyên liệu để tìm kiếm
     final normalizedIngredients = filteredResults
         .map((result) => IngredientNormalizer.normalize(result.foodName))
-        .toSet() // Dùng Set để tránh tìm kiếm trùng lặp ngay từ đầu
+        .toSet() // Dùng Set để tránh tìm kiếm trùng lặp
         .toList();
 
     // 4. Tìm kiếm Recipe cho từng nguyên liệu
@@ -62,7 +65,6 @@ class MealRecommendationService {
         final aiIngLower = aiIng.toLowerCase();
         
         // Kiểm tra xem nguyên liệu AI có trong danh sách nguyên liệu của Recipe không
-        // So sánh chứa chuỗi (contains) để linh hoạt hơn
         bool isMatch = recipeIngredientsLower.any((recipeIng) =>
             recipeIng.contains(aiIngLower) || aiIngLower.contains(recipeIng));
         
@@ -76,7 +78,10 @@ class MealRecommendationService {
     // Sort giảm dần theo score
     scoredRecipes.sort((a, b) => b.score.compareTo(a.score));
 
-    return scoredRecipes.map((sr) => sr.recipe).toList();
+    return MealRecommendationResult(
+      recognizedIngredients: filteredResults,
+      recipes: scoredRecipes.map((sr) => sr.recipe).toList(),
+    );
   }
 }
 

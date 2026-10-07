@@ -9,8 +9,8 @@ class RoboflowFoodRecognitionService implements FoodRecognitionService {
   final String _baseUrl = "https://serverless.roboflow.com/food-ingredient-recognition-ml/1";
 
   RoboflowFoodRecognitionService({
-    required String apiKey,
-  }) : _apiKey = apiKey;
+    required this._apiKey,
+  });
 
   /// Parsers the Roboflow JSON response into a list of [FoodRecognitionResult].
   /// This is internal and exposed for testing purposes.
