@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/recipe.dart';
+import '../services/ai/ai_service_factory.dart';
 import '../services/ai/meal_recommendation_service.dart';
-import '../services/ai/providers/roboflow_food_recognition_service.dart';
 import '../services/ai/providers/themealdb_recipe_service.dart';
 
 // Nội dung chính của màn hình Quét
@@ -28,8 +28,7 @@ class _ScanScreenState extends State<ScanScreen> {
   void initState() {
     super.initState();
     _recommendationService = MealRecommendationService(
-      foodRecognitionService: RoboflowFoodRecognitionService(
-        apiKey: const String.fromEnvironment('ROBOFLOW_API_KEY'),      ),
+      foodRecognitionService: AIServiceFactory.createFoodRecognitionService(),
       recipeService: TheMealDBRecipeService(),
     );
   }
@@ -129,9 +128,10 @@ class _ScanScreenState extends State<ScanScreen> {
             itemBuilder: (context, index) {
               final recipe = _recommendedRecipes[index];
               return _buildRecipeItem(
-                recipe.name,
-                "${recipe.durationMinutes ?? '??'} phút • ${recipe.ingredients.length} nguyên liệu",
-                index == 0 ? "Phù hợp nhất" : "Gợi ý",
+                title: recipe.name,
+                info: "${recipe.durationMinutes ?? '--'} phút • ${recipe.ingredients.length} nguyên liệu",
+                tag: index == 0 ? "Phù hợp nhất" : "Gợi ý",
+                onTap: () => _showRecipeDetailDialog(recipe),
               );
             },
           ),
@@ -146,40 +146,120 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-
-  Widget _buildRecipeItem(String title, String info, String tag) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white, // Nền item màu trắng để nổi bật trên nền xám sáng của popup
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
+  void _showRecipeDetailDialog(Recipe recipe) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: Column(
+          children: [
+            Text(
+              recipe.name.toUpperCase(),
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF111827),
+                fontSize: 16,
+                letterSpacing: 1.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "${recipe.durationMinutes ?? '--'} PHÚT",
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(width: 30, height: 2, color: const Color(0xFFE5E7EB)),
+          ],
+        ),
+        contentPadding: const EdgeInsets.all(10),
+        content: Container(
+          width: MediaQuery.of(context).size.width,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(8),
+            border: const Border(
+              left: BorderSide(color: Color(0xFF9CA3AF), width: 2),
+              right: BorderSide(color: Color(0xFF9CA3AF), width: 2),
+            ),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827))),
-                const SizedBox(height: 4),
-                Text(info, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                const Text(
+                  'NGUYÊN LIỆU',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF111827)),
+                ),
+                const SizedBox(height: 8),
+                ...recipe.ingredients.map((ing) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text("• $ing", style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
+                    )),
+                const SizedBox(height: 20),
+                const Text(
+                  'CÁCH LÀM',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF111827)),
+                ),
+                const SizedBox(height: 8),
+                ...recipe.steps.asMap().entries.map((entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text("${entry.key + 1}. ${entry.value}", style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
+                    )),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: const Color(0xFF111827), borderRadius: BorderRadius.circular(6)),
-            child: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ĐÓNG', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  void _showNutritionDetailDialog(String title, List<Map<String, String>> items) {
-    // Logic 4: Popup chi tiết dinh dưỡng
+  Widget _buildRecipeItem({required String title, required String info, required String tag, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white, // Nền item màu trắng để nổi bật trên nền xám sáng của popup
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827))),
+                  const SizedBox(height: 4),
+                  Text(info, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: const Color(0xFF111827), borderRadius: BorderRadius.circular(6)),
+              child: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNutritionDetailDialog(String title) {
+    // Logic 4: Popup chi tiết dinh dưỡng (Placeholder)
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -199,31 +279,30 @@ class _ScanScreenState extends State<ScanScreen> {
         content: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6), // Màu xám sáng rõ rệt như ý bạn (Light Grey giống nền App)
+            color: const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(8),
             border: const Border(
-              left: BorderSide(color: Color(0xFF9CA3AF), width: 2), // Cạnh dọc mỏng đúng 2px
-              right: BorderSide(color: Color(0xFF9CA3AF), width: 2), // Cạnh dọc mỏng đúng 2px
+              left: BorderSide(color: Color(0xFF9CA3AF), width: 2),
+              right: BorderSide(color: Color(0xFF9CA3AF), width: 2),
             ),
           ),
-          child: Column(
+          child: const Column(
             mainAxisSize: MainAxisSize.min,
-            children: items.map((item) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(item['name']!, style: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600)),
-                  Text(item['value']!, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111827))),
-                ],
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Chưa có dữ liệu dinh dưỡng',
+                  style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                ),
               ),
-            )).toList(),
+            ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('HIỂU RỒI', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold)),
+            child: const Text('ĐÓNG', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -268,9 +347,9 @@ class _ScanScreenState extends State<ScanScreen> {
                   decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'AI VISION 4.2 • SẴN SÀNG',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF111827), letterSpacing: 0.5),
+                Text(
+                  'AI VISION 4.2 • ${_isLoading ? "PROCESSING" : "READY"}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF111827), letterSpacing: 0.5),
                 ),
                 const Spacer(),
                 const Icon(Icons.videocam_outlined, color: Color(0xFF6B7280), size: 18),
@@ -371,12 +450,12 @@ class _ScanScreenState extends State<ScanScreen> {
                                 children: [
                                   const Icon(Icons.auto_awesome, color: Color(0xFF4B5563), size: 14),
                                   const SizedBox(width: 4),
-                                  const Column(
+                                  Column(
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('AUTO-DETECT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF111827))),
-                                      Text('60 FPS', style: TextStyle(fontSize: 8, color: Color(0xFF6B7280))),
+                                      const Text('AI ANALYSIS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF111827))),
+                                      Text(_isLoading ? 'PROCESSING' : 'READY', style: const TextStyle(fontSize: 8, color: Color(0xFF6B7280))),
                                     ],
                                   ),
                                 ],
@@ -443,33 +522,20 @@ class _ScanScreenState extends State<ScanScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildNutritionClickable(
-                          label: "NĂNG LƯỢNG", value: "320", unit: "KCAL",
-                          onTap: () => _showNutritionDetailDialog("Năng lượng", [
-                            {"name": "Ức gà (200g)", "value": "270 kcal"},
-                            {"name": "Bông cải xanh", "value": "50 kcal"},
-                            {"name": "Tổng cộng", "value": "320 kcal"},
-                          ]),
+                          label: "NĂNG LƯỢNG", value: "--", unit: "KCAL",
+                          onTap: () => _showNutritionDetailDialog("Năng lượng"),
                         ),
                         _buildNutritionClickable(
-                          label: "PROTEIN", value: "48g", unit: "HIGH",
-                          onTap: () => _showNutritionDetailDialog("Protein", [
-                            {"name": "Ức gà (200g)", "value": "46g"},
-                            {"name": "Bông cải xanh", "value": "2g"},
-                          ]),
+                          label: "PROTEIN", value: "--", unit: "--",
+                          onTap: () => _showNutritionDetailDialog("Protein"),
                         ),
                         _buildNutritionClickable(
-                          label: "CARBS", value: "14g", unit: "CLEAN",
-                          onTap: () => _showNutritionDetailDialog("Carbs", [
-                            {"name": "Ức gà (200g)", "value": "0g"},
-                            {"name": "Bông cải xanh", "value": "14g"},
-                          ]),
+                          label: "CARBS", value: "--", unit: "--",
+                          onTap: () => _showNutritionDetailDialog("Carbs"),
                         ),
                         _buildNutritionClickable(
-                          label: "CHẤT BÉO", value: "9g", unit: "FIT",
-                          onTap: () => _showNutritionDetailDialog("Chất béo", [
-                            {"name": "Ức gà (200g)", "value": "8g"},
-                            {"name": "Bông cải xanh", "value": "1g"},
-                          ]),
+                          label: "CHẤT BÉO", value: "--", unit: "--",
+                          onTap: () => _showNutritionDetailDialog("Chất béo"),
                         ),
                       ],
                     ),

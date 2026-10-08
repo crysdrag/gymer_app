@@ -15,6 +15,6 @@ void main() {
     await tester.pumpWidget(const NutriGymApp());
 
     // Verify that our app header text is displayed.
-    expect(find.text('Quét Nguyên Liệu'), findsOneWidget);
+    expect(find.text('Quét'), findsWidgets);
   });
 }

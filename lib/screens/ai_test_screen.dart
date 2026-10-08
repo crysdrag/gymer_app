@@ -83,7 +83,7 @@ class _AITestScreenState extends State<AITestScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 color: Colors.amber.shade100,
-                child: const Text(
+                child: Text(
                   "Cảnh báo: API Key đang rỗng. Bạn cần cấu hình ROBOFLOW_API_KEY qua --dart-define.",
                   style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
                 ),
